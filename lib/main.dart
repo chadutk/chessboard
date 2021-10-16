@@ -6,7 +6,7 @@ void main() {
 }
 
 class Board extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const Board({Key? key}) : super(key: key);
   final String title = "Chess";
 
   @override
@@ -95,10 +95,10 @@ class _ChessPieceState extends State<ChessPiece> {
   }
 }
 
-class _MyHomePageState extends State<Board> {
+class _BoardState extends State<Board> {
   List<ChessPiece> pieces = [];
 
-  _MyHomePageState() {
+  _BoardState() {
     List<ChessPiece> pawns =
         List.generate(8, (index) => ChessPiece("pawn", index + 1, 2));
     pieces = [
