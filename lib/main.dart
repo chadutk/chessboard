@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:flame/components.dart';
 import 'package:flame/extensions.dart';
@@ -99,10 +102,44 @@ class ChessPiece extends SpriteComponent with Draggable, HasGameRef<MyGame> {
 
 class MyGame extends FlameGame with HasDraggableComponents {
   var pieceMap = Map();
+  StreamSubscription<DocumentSnapshot>? query;
+  ChessPiece? moving;
+  Vector2? movingFrom;
+  Vector2? movingTo;
+  Vector2? movingLatest;
+  double elapsed = 0;
 
   @override
   void update(double dt) {
     super.update(dt);
+    if (movingTo == null) {
+      return;
+    }
+    elapsed += dt;
+    if (elapsed > .5) {
+      elapsed = 0;
+      double dist = movingTo!.distanceTo(movingLatest!);
+      Vector2 newPos;
+      if(dist <= .1) {
+        newPos = movingTo!;
+        movingFrom = null;
+        movingTo = null;
+        pieceMap[moving!] = newPos;
+        moving = null;
+        Map<String, dynamic> data = Map();
+        data["latest"] = null;
+        data["from"] = null;
+        data["moving"] = false;
+        FirebaseFirestore.instance.collection("data").doc("game").set(data, SetOptions(merge:true));
+      } else {
+        Vector2 diff = movingTo! - movingLatest!;
+        Vector2 change = diff / (dist * 10);
+        newPos = movingLatest! + change;
+        Map<String, dynamic> data = Map();
+        data["latest"] = [newPos.x, newPos.y];
+        FirebaseFirestore.instance.collection("data").doc("game").set(data, SetOptions(merge:true));
+      }
+    }
   }
 
   addPiece(String src, int x, int y) {
@@ -133,14 +170,42 @@ class MyGame extends FlameGame with HasDraggableComponents {
 
       add(board);
       changePriority(board, 0);
+      await Firebase.initializeApp();
+      query = FirebaseFirestore.instance
+            .collection('data')
+            .doc("game")
+            .snapshots()
+            .listen((snapshot) {
+          Map<String, dynamic> data = snapshot.data()!;
+          if(data["moving"] == null || data["moving"] == false) {
+            return;
+          }
+          List? receivedLatest = data["latest"];
+          if(receivedLatest == null) return;
+          movingLatest = Vector2(receivedLatest[0], receivedLatest[1]);
+          List receivedFrom = data["from"];
+          movingFrom = Vector2(receivedFrom[0], receivedFrom[1]);
+        });
   }
 
   void move(ChessPiece piece, Vector2 updated) {
     updated.round();
-    pieceMap[piece] = updated;
+    moving = piece;
+    movingFrom = pieceMap[piece]; // Operated on when retrieved
+    movingTo = updated; // registers intent, not sent to firebase
+    movingLatest = movingFrom; // initialized here for state, then updated as read
+    elapsed = 0;
+    Map<String, dynamic> data = Map();
+    data["from"] = [movingFrom!.x, movingFrom!.y];
+    data["latest"] = [movingLatest!.x, movingLatest!.y];
+    data["moving"] = true;
+    FirebaseFirestore.instance.collection("data").doc("game").set(data, SetOptions(merge:true));
   }
 
   Vector2 getPosition(ChessPiece piece) {
+    if (movingFrom != null && movingFrom!.distanceTo(pieceMap[piece]) == 0) {
+      return movingLatest!;
+    }
     return pieceMap[piece];
   }
 }

@@ -25,6 +25,24 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="chessboard">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <script src="https://www.gstatic.com/firebasejs/8.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.20.0/firebase-firestore.js"></script>
+  <script>
+    // Your web app's Firebase configuration
+
+    var firebaseConfig = {
+      apiKey: "AIzaSyASVxIwVjP7T7zBbF957wTSo6nhKM6vsYM",
+      authDomain: "electronic-chessboard.firebaseapp.com",
+      projectId: "electronic-chessboard",
+      storageBucket: "electronic-chessboard.appspot.com",
+      messagingSenderId: "505394481279",
+      appId: "1:505394481279:web:78f1435fddcfb64ac0574a",
+      measurementId: "G-J9Z4VMLCH8"
+    };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+  </script>
 
   <title>chessboard</title>
   <link rel="manifest" href="manifest.json">
